@@ -1,82 +1,75 @@
-import streamlit as st
+# app.py
+
 import pandas as pd
+import streamlit as st
+import plotly.express as px
 
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+# -----------------------------
+# Título da aplicação
+# -----------------------------
+st.set_page_config(page_title="Análise de Cancelamentos", layout="wide")
+st.title("📊 Análise de Cancelamentos")
 
+# -----------------------------
+# Passo 1 - Importar dados
+# -----------------------------
+@st.cache_data
+def carregar_dados():
+    return pd.read_csv("cancelamentos.csv")
 
-st.set_page_config(page_title="Previsão de Score de Crédito", layout="centered")
+tabela = carregar_dados()
 
-st.title("📊 Previsão de Score de Crédito")
-st.write("App simples para treinar modelos de Machine Learning")
+# -----------------------------
+# Passo 2 - Visualizar dados
+# -----------------------------
+st.subheader("Base de dados")
 
-# Upload do arquivo
-arquivo = st.file_uploader("📁 Envie o arquivo clientes.csv", type="csv")
+tabela = tabela.drop(columns="CustomerID")
+st.dataframe(tabela)
 
-if arquivo:
-    tabela = pd.read_csv(arquivo)
+# -----------------------------
+# Passo 3 - Tratamento dos dados
+# -----------------------------
+st.subheader("Informações da base (antes do tratamento)")
+st.text(tabela.info())
 
-    st.subheader("📋 Visualização da base de dados")
-    st.dataframe(tabela)
+tabela = tabela.dropna()
 
-    st.subheader("ℹ️ Informações da base")
-    st.write(tabela.info())
+st.subheader("Informações da base (após remover valores nulos)")
+st.text(tabela.info())
 
-    # ===============================
-    # Tratamento dos dados
-    # ===============================
-    st.subheader("⚙️ Preparação dos dados")
+# -----------------------------
+# Passo 4 - Análise inicial
+# -----------------------------
+st.subheader("Distribuição de Cancelamentos")
 
-    try:
-        cod_profissao = LabelEncoder()
-        tabela["profissao"] = cod_profissao.fit_transform(tabela["profissao"])
+col1, col2 = st.columns(2)
 
-        cod_mix = LabelEncoder()
-        tabela["mix"] = cod_mix.fit_transform(tabela["mix"])
+with col1:
+    st.write("Quantidade")
+    st.write(tabela["cancelou"].value_counts())
 
-        cod_comportamento = LabelEncoder()
-        tabela["comportamento_pagamento"] = cod_comportamento.fit_transform(
-            tabela["comportamento_pagamento"]
-        )
+with col2:
+    st.write("Percentual")
+    st.write(tabela["cancelou"].value_counts(normalize=True).mul(100).round(2))
 
-        y = tabela["score_credito"]
-        x = tabela.drop(columns=["score_credito", "id_cliente"])
+# -----------------------------
+# Passo 5 - Análise das causas
+# -----------------------------
+st.subheader("Análise por variáveis")
 
-        # Split
-        x_treino, x_teste, y_treino, y_teste = train_test_split(
-            x, y, test_size=0.3, random_state=42
-        )
+# seletor de coluna (bem melhor do que gerar todos de uma vez)
+coluna = st.selectbox(
+    "Selecione a variável para análise:",
+    options=[c for c in tabela.columns if c != "cancelou"]
+)
 
-        # ===============================
-        # Modelagem
-        # ===============================
-        st.subheader("🤖 Treinamento dos modelos")
+grafico = px.histogram(
+    tabela,
+    x=coluna,
+    color="cancelou",
+    barmode="group",
+    title=f"Cancelamentos por {coluna}"
+)
 
-        if st.button("Treinar modelos"):
-            modelo_arvore = RandomForestClassifier(random_state=42)
-            modelo_knn = KNeighborsClassifier()
-
-            modelo_arvore.fit(x_treino, y_treino)
-            modelo_knn.fit(x_treino, y_treino)
-
-            previsao_arvore = modelo_arvore.predict(x_teste)
-            previsao_knn = modelo_knn.predict(x_teste)
-
-            acc_arvore = accuracy_score(y_teste, previsao_arvore)
-            acc_knn = accuracy_score(y_teste, previsao_knn)
-
-            st.success("Modelos treinados com sucesso!")
-
-            st.metric("Acurácia - RandomForest", f"{acc_arvore:.2%}")
-            st.metric("Acurácia - KNN", f"{acc_knn:.2%}")
-
-            if acc_arvore > acc_knn:
-                st.info("🏆 Melhor modelo: RandomForest")
-            else:
-                st.info("🏆 Melhor modelo: KNN")
-
-    except Exception as e:
-        st.error(f"Erro no processamento: {e}")
+st.plotly_chart(grafico, use_container_width=True)
