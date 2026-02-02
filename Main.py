@@ -1,70 +1,82 @@
+import streamlit as st
 import pandas as pd
-import LabelEncoder #transforma textos em numeros, ele vem om a instalação scikit-learn
 
-#Passo 1: importar base de dados 
-
-tabela = pd.read_csv("clientes.csv")
-display(tabela)  #lembrando que display só funciona em extensão .ipynb
-
-#Passo 2: tratar e preparar a base de dados para a IA
-#objetivo: prever a coluna score_credito
-
-#todas as ias não trabalham com textos, somente números
-
-display(tabela.info()) 
-
-codificador_profissao = LabelEncoder() #recebendo a função pra codificar
-tabela["profissao"] = codificador_profissao.fit_transform(tabela["profissao"]) #tabela recebe ela mesma com o codificador aplicando dentro da coluna
-
-codificador_mix = LabelEncoder()
-tabela["mix"] = codificador_mix.fit_transform(tabela["mix"]) #precisa aplicar um para cada, pois o 1 de uma coluna é diferente do 1 das outras
-
-
-codificador_comportamento_pagamento = LabelEncoder()
-tabela["comportamento_pagamento"] = codificador_comportamento_pagamento.fit_transform(tabela["comportamento_pagamento"])
-
-#TERMOS COMUNS: X é o cara que vai ser usado para prever, o Y é quem é o cara que vai ser previsto. A partir dos dados de X, a IA vai descobrir como chegar # nos status contidos em Y
-
-y = tabela["score_credito"]
-x = tabela.drop(colums="score_credito", "id_cliente") #id sai pq é inutil, score sai para não virar numero e ser previsto
-
-# O score sai justamente para que a ia PREVEJA, SEM TER A RESPOSTA
-
+from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-
-x_treino, x_teste, y_treino, y_teste = train_test_split(x,y, test_size=0.3)#ficou 30% pra TESTE e 70% para treinar a IA
-
-
-#Passo 3: criar modelo de previsão OU modelo de IA (ruim, ok bom)
-#Modelos mais usados: RandomForest e KNN - Nearest neighbors
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
-
-modelo_arvore = RandomForestClassifier()
-modelo_knn = KNeighborsClassifier()
-
-#PRECISA treinar os modelos antes
-
-modelo_arvore.fit(x_treino, y_treino)
-modelo_knn.fit(x_treino, y_treino)
-
-#Passo 4 avaliar e escolher o melhor modelo
-
-previsao_arvore = modelo_arvore.predict(x_teste)
-previsao_knn = modelo_knn.predict(x_teste)
+from sklearn.metrics import accuracy_score
 
 
-from sklearn.metrics import accuracy_score #calcular o score de acerto em %
+st.set_page_config(page_title="Previsão de Score de Crédito", layout="centered")
 
-print(accuracy_score(y_teste, previsao_arvore))	
-print(accuracy_score(y_teste, previsao_knn))
+st.title("📊 Previsão de Score de Crédito")
+st.write("App simples para treinar modelos de Machine Learning")
 
+# Upload do arquivo
+arquivo = st.file_uploader("📁 Envie o arquivo clientes.csv", type="csv")
 
+if arquivo:
+    tabela = pd.read_csv(arquivo)
 
+    st.subheader("📋 Visualização da base de dados")
+    st.dataframe(tabela)
 
+    st.subheader("ℹ️ Informações da base")
+    st.write(tabela.info())
 
+    # ===============================
+    # Tratamento dos dados
+    # ===============================
+    st.subheader("⚙️ Preparação dos dados")
 
+    try:
+        cod_profissao = LabelEncoder()
+        tabela["profissao"] = cod_profissao.fit_transform(tabela["profissao"])
 
+        cod_mix = LabelEncoder()
+        tabela["mix"] = cod_mix.fit_transform(tabela["mix"])
 
+        cod_comportamento = LabelEncoder()
+        tabela["comportamento_pagamento"] = cod_comportamento.fit_transform(
+            tabela["comportamento_pagamento"]
+        )
 
+        y = tabela["score_credito"]
+        x = tabela.drop(columns=["score_credito", "id_cliente"])
+
+        # Split
+        x_treino, x_teste, y_treino, y_teste = train_test_split(
+            x, y, test_size=0.3, random_state=42
+        )
+
+        # ===============================
+        # Modelagem
+        # ===============================
+        st.subheader("🤖 Treinamento dos modelos")
+
+        if st.button("Treinar modelos"):
+            modelo_arvore = RandomForestClassifier(random_state=42)
+            modelo_knn = KNeighborsClassifier()
+
+            modelo_arvore.fit(x_treino, y_treino)
+            modelo_knn.fit(x_treino, y_treino)
+
+            previsao_arvore = modelo_arvore.predict(x_teste)
+            previsao_knn = modelo_knn.predict(x_teste)
+
+            acc_arvore = accuracy_score(y_teste, previsao_arvore)
+            acc_knn = accuracy_score(y_teste, previsao_knn)
+
+            st.success("Modelos treinados com sucesso!")
+
+            st.metric("Acurácia - RandomForest", f"{acc_arvore:.2%}")
+            st.metric("Acurácia - KNN", f"{acc_knn:.2%}")
+
+            if acc_arvore > acc_knn:
+                st.info("🏆 Melhor modelo: RandomForest")
+            else:
+                st.info("🏆 Melhor modelo: KNN")
+
+    except Exception as e:
+        st.error(f"Erro no processamento: {e}")
