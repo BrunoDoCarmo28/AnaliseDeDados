@@ -3,6 +3,7 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+import os
 
 # -----------------------------
 # Configuração da página
@@ -11,12 +12,15 @@ st.set_page_config(page_title="Análise de Cancelamentos", layout="wide")
 st.title("📊 Análise de Cancelamentos")
 
 # -----------------------------
-# Carregar dados
+# Carregar dados (Excel)
 # -----------------------------
 @st.cache_data
 def carregar_dados():
-    df = pd.read_csv("cancelamentos.csv")
-    df.columns = df.columns.str.strip()
+    BASE_DIR = os.path.dirname(__file__)
+    CAMINHO = os.path.join(BASE_DIR, "cancelamentos.xlsx")
+    
+    df = pd.read_excel(CAMINHO)
+    df.columns = df.columns.str.strip()  # remove espaços invisíveis
     return df
 
 tabela = carregar_dados()
@@ -24,11 +28,11 @@ tabela = carregar_dados()
 # Remover CustomerID se existir
 tabela = tabela.drop(columns="CustomerID", errors="ignore")
 
-# Transformar 0 e 1 em texto (mais profissional)
+# Converter 0 e 1 em texto
 tabela["cancelou"] = tabela["cancelou"].map({0: "Não", 1: "Sim"})
 
 # -----------------------------
-# Seletor de variável
+# Seleção de variável
 # -----------------------------
 st.subheader("🔎 Análise por variável")
 
@@ -38,11 +42,10 @@ coluna = st.selectbox(
 )
 
 # -----------------------------
-# Distribuição dinâmica
+# Gráfico de Quantidade
 # -----------------------------
-st.subheader("📊 Distribuição de Cancelamentos")
+st.subheader("📊 Quantidade de Cancelamentos")
 
-# Filtrando agrupamento dinâmico
 distribuicao = (
     tabela
     .groupby([coluna, "cancelou"])
@@ -50,7 +53,7 @@ distribuicao = (
     .reset_index(name="quantidade")
 )
 
-grafico = px.bar(
+grafico_qtd = px.bar(
     distribuicao,
     x=coluna,
     y="quantidade",
@@ -59,12 +62,12 @@ grafico = px.bar(
     title=f"Cancelamentos por {coluna}"
 )
 
-st.plotly_chart(grafico, use_container_width=True)
+st.plotly_chart(grafico_qtd, use_container_width=True)
 
 # -----------------------------
-# Percentual dinâmico
+# Gráfico de Percentual
 # -----------------------------
-st.subheader("📈 Percentual de Cancelamento")
+st.subheader("📈 Percentual de Cancelamentos")
 
 percentual = (
     tabela
@@ -75,7 +78,7 @@ percentual = (
     .reset_index()
 )
 
-grafico_percentual = px.bar(
+grafico_pct = px.bar(
     percentual,
     x=coluna,
     y="percentual",
@@ -84,5 +87,4 @@ grafico_percentual = px.bar(
     title=f"Percentual de Cancelamento por {coluna}"
 )
 
-st.plotly_chart(grafico_percentual, use_container_width=True)
-
+st.plotly_chart(grafico_pct, use_container_width=True)
