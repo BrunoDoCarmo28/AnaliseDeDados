@@ -1,0 +1,11 @@
+id_cliente;profissao;mix;comportamento_pagamento;score_credito
+1;Engenheiro;Bom;Paga em dia;Alto
+2;Professor;Médio;Atraso ocasional;Médio
+3;Médico;Excelente;Paga em dia;Alto
+4;Autônomo;Baixo;Atrasos frequentes;Baixo
+5;Analista;Médio;Paga em dia;Médio
+6;Empresário;Excelente;Paga em dia;Alto
+7;Vendedor;Baixo;Atrasos frequentes;Baixo
+8;Programador;Bom;Atraso ocasional;Médio
+9;Designer;Bom;Paga em dia;Alto
+10;Técnico;Médio;Atraso ocasional;Médio
