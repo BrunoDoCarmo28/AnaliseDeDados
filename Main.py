@@ -15,7 +15,7 @@ st.title("📊 Análise de Cancelamentos")
 # -----------------------------
 @st.cache_data
 def carregar_dados():
-    return pd.read_xlsx("cancelamentos.xlsx")
+    return pd.read_excel("cancelamentos.xlsx")
 
 tabela = carregar_dados()
 
