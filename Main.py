@@ -24,7 +24,8 @@ tabela = carregar_dados()
 # -----------------------------
 st.subheader("Base de dados")
 
-tabela = tabela.drop(columns="CustomerID")
+tabela.columns = tabela.columns.str.strip()
+tabela = tabela.drop(columns="CustomerID", errors="ignore")
 st.dataframe(tabela)
 
 # -----------------------------
