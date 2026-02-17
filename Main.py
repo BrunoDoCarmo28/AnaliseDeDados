@@ -20,15 +20,30 @@ def carregar_dados():
     CAMINHO = os.path.join(BASE_DIR, "cancelamentos.xlsx")
     
     df = pd.read_excel(CAMINHO)
-    df.columns = df.columns.str.strip()  # remove espaços invisíveis
+    df.columns = df.columns.str.strip()
     return df
 
 tabela = carregar_dados()
 
+# -----------------------------
+# Tratamento dos dados
+# -----------------------------
+
 # Remover CustomerID se existir
 tabela = tabela.drop(columns="CustomerID", errors="ignore")
 
-# Converter 0 e 1 em texto
+# Padronizar texto da coluna plano
+if "plano" in tabela.columns:
+    tabela["plano"] = tabela["plano"].astype(str).str.strip().str.title()
+    
+    # Converter qualquer valor diferente para Mensal ou Anual
+    tabela["plano"] = tabela["plano"].replace({
+        "Basico": "Mensal",
+        "Intermediario": "Mensal",
+        "Premium": "Anual"
+    })
+
+# Converter cancelou para texto
 tabela["cancelou"] = tabela["cancelou"].map({0: "Não", 1: "Sim"})
 
 # -----------------------------
